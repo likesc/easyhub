@@ -1,0 +1,10 @@
+## Interface: 30403
+## Version: 0.1.0
+## Title: Tiny hub
+## Notes: item-price/level
+## Author: R32
+## SavedVariables: tinyhub_options
+## Title-zhCN: 针线盒
+## Notes-zhCN: 显示物品等级/价格
+
+tinyhub.lua
