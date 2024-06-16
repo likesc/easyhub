@@ -1,7 +1,7 @@
-local NAME, ADDON = ...
-local LANG = GetLocale()
+local NAME = ...
 local options --
 -- compat
+local GetContainerItemInfo = C_Container.GetContainerItemInfo or GetContainerItemInfo
 local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNumSlots
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
 
@@ -50,28 +50,29 @@ function selljunk.flush(sell)
 end
 function selljunk.next()
 	local sell = selljunk
-	local bag, bcc, slot, send = unpack(sell.state)
-	if slot > send then
+	local state = sell.state
+	local bag, slot, snum = unpack(state)
+	if slot > snum then
 		bag = bag + 1
 		slot = 1
-		send = C_Container.GetContainerNumSlots(bag)
-		if send == 0 then
+		snum = GetContainerNumSlots(bag)
+		if snum == 0 then
 			sell.flush(sell)
 			return
 		end
-		sell.state[1] = bag
-		sell.state[3] = slot
-		sell.state[4] = send
+		state[1] = bag
+		state[2] = slot
+		state[3] = snum
 	end
 	sell.routine(sell, bag, slot)
-	sell.state[3] = slot + 1
+	state[2] = slot + 1
 	if sell.price then
 		C_Timer.After(0.02, selljunk.next)
 	end
 end
 function selljunk.routine(sell, bag, slot)
-	local info = C_Container.GetContainerItemInfo(bag, slot)
-	if not info or info.isLocked or info.quality > 0 or then
+	local info = GetContainerItemInfo(bag, slot)
+	if not info or info.isLocked or info.quality > 0 then
 		return
 	end
 	local name, _, _, _, _, _, _, _, _, _, price = GetItemInfo(info.itemID)
@@ -88,8 +89,8 @@ function selljunk.begin(sell)
 		return
 	end
 	sell.price = 0
-	sell.state = {0, NUM_BAG_SLOTS, 1, C_Container.GetContainerNumSlots(0)}
-	sell.next() -- coroutine.yield ?
+	sell.state = {0, 1, GetContainerNumSlots(0)}
+	sell.next() -- TODO : switch to coroutine.yield ?
 end
 function selljunk.init()
 	local button = CreateFrame("Button", nil, MerchantBuyBackItem)
@@ -114,22 +115,65 @@ function selljunk.init()
 		end
 		selljunk:begin()
 	end)
-	ADDON.selljunk = button -- button:SetParentKey("selljunk")
+	selljunk.owner = button
 end
 function selljunk.destory()
-	local button = ADDON.selljunk
+	local button = selljunk.owner
 	if not button then
 		return
 	end
-	ADDON.selljunk = nil -- button:SetParentKey(nil)
+	selljunk.owner = nil
 	button:SetParent(nil)
 	button:SetScript("OnLeave", nil)
 	button:SetScript("OnEnter", nil)
 	button:SetScript("OnMouseUp", nil)
-	print("removed" .. tostring(MerchantBuyBackItem.selljunk))
 end
 
---
+-- cheapest (Stolen from https://github.com/ketho-wow/FlashCheapestGrey)
+
+local cheapest = {}
+function cheapest.light(bag, slot)
+	local item
+	for i = 1, NUM_CONTAINER_FRAMES, 1 do
+		local frame = _G["ContainerFrame"..i]
+		if frame:GetID() == bagId and frame:IsShown() then
+			item = _G["ContainerFrame"..i.."Item"..(GetContainerNumSlots(bagId) + 1 - slot)]
+		end
+	end
+	if item then
+		item.NewItemTexture:SetAtlas("bags-glow-orange")
+		item.NewItemTexture:Show()
+		item.flashAnim:Play()
+		item.newitemglowAnim:Play()
+	end
+end
+function cheapest.mark(key, state)
+	if not (key =="LCTRL" and state == 1) then
+		return
+	end
+	local max = 0
+	local x
+	local y
+	for bag = 0, NUM_BAG_SLOTS do
+		for slot = 1, GetContainerNumSlots(bag) do
+			local info = GetContainerItemInfo(bag, slot)
+			if info then
+				local _, _, quality, _, _, _, _, _, _, _, price = GetItemInfo(info.itemID)
+				local sum = quality == 0 and price > 0 and price * info.stackCount or 0
+				if sum > max then
+					max = sum
+					x = bag
+					y = slot
+				end
+			end
+		end
+	end
+	if x and IsBagOpen(x) then
+		cheapest.light(x, y)
+	end
+end
+
+-- global
 
 local function opt_changed(_, setting, value)
 	local key = setting:GetVariable()
@@ -137,8 +181,13 @@ local function opt_changed(_, setting, value)
 
 	if key == "selljunk" then
 		selljunk.destory()
-		if value == true then
+		if value then
 			selljunk.init()
+		end
+	elseif key == "cheapest" then
+		cheapest.owner:UnregisterEvent("MODIFIER_STATE_CHANGED")
+		if value then
+			cheapest.owner:RegisterEvent("MODIFIER_STATE_CHANGED")
 		end
 	end
 end
@@ -152,7 +201,7 @@ local function init(frame)
 	if not (Settings and Settings.RegisterVerticalLayoutCategory) then
 		return
 	end
-	local category = Settings.RegisterVerticalLayoutCategory("针线盒")
+	local category = Settings.RegisterVerticalLayoutCategory(GetAddOnMetadata(NAME, "Title"))
 	local booltype = type(true)
 	do -- item level
 		local key = "level"
@@ -185,21 +234,38 @@ local function init(frame)
 			selljunk.init()
 		end
 	end
+	do -- cheapest
+		local key = "cheapest"
+		local desc = "按下 Ctrl 时高亮背包内最便宜的垃圾物品"
+		local label = "高亮最便宜的垃圾"
+		local value = options[key] or (options[key] == nil and true)
+		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		Settings.CreateCheckBox(category, setting, desc)
+		Settings.SetOnValueChangedCallback(key, opt_changed)
+		if value then
+			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
+		end
+		cheapest.owner = frame
+	end
 	Settings.RegisterAddOnCategory(category)
+end
+
+local function onevent(self, event, arg1, arg2)
+	if event == "MODIFIER_STATE_CHANGED" then
+		cheapest.mark(arg1, arg2)
+	end
 end
 
 local function main()
 	local frame = CreateFrame("Frame")
-	frame:RegisterEvent("ADDON_LOADED")
 	frame:RegisterEvent("PLAYER_LOGIN")
-	frame:RegisterEvent("MODIFIER_STATE_CHANGED") -- cheapest
-	frame:SetScript("OnEvent", function(self, event, name)
-		if event == "ADDON_LOADED" and NAME == name then
-			if not tinyhub_options then tinyhub_options = {} end
-			options = tinyhub_options
-		elseif event == "PLAYER_LOGIN" then
-			init(self)
+	frame:SetScript("OnEvent", function(self)
+		if not tinyhub_options then
+			tinyhub_options = {}
 		end
+		options = tinyhub_options
+		init(self)
+		self:SetScript("OnEvent", onevent)
 	end)
 end
 
