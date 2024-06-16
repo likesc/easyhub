@@ -1,10 +1,10 @@
 ## Interface: 30403
 ## Version: 0.1.0
 ## Title: Tinyhub
-## Notes: item price/level, selljunk, cheapest trash
+## Notes: item price/level, selljunk, fastloot, cheapest trash
 ## Author: likesc
 ## SavedVariables: tinyhub_options
 ## Title-zhCN: 轻量集
-## Notes-zhCN: 显示物品等级/价格, 一键垃圾出售, 高亮背包内最便宜垃圾
+## Notes-zhCN: 显示物品等级/价格, 一键垃圾出售, 快速拾取, 高亮背包内最便宜垃圾
 
 tinyhub.lua

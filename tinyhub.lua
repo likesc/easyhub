@@ -1,5 +1,6 @@
 local NAME = ...
-local options --
+local options
+
 -- compat
 local GetContainerItemInfo = C_Container.GetContainerItemInfo or GetContainerItemInfo
 local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNumSlots
@@ -22,7 +23,7 @@ local function tip_price(tooltip)
 	local show_level = level and options.level ~= false and level > 1 and equip
 
 	if show_price then
-		local container  = GetMouseFocus()
+		local container = GetMouseFocus()
 		if not container then
 			return
 		end
@@ -173,7 +174,25 @@ function cheapest.mark(key, state)
 	end
 end
 
+-- fastloot (Stolen from https://github.com/Xarano-GIT/Faster-Loot)
+
+local fastloot = {
+	epoch = 0.,
+	DELAY = 0.3,
+	run = function(s)
+		if GetTime() - fastloot.epoch < fastloot.DELAY then
+			return
+		end
+		print("fastloot : " .. tostring(GetNumLootItems()))
+		for i = GetNumLootItems(), 1, -1 do
+			LootSlot(i)
+		end
+		fastloot.epoch = GetTime()
+	end
+}
+
 -- global
+local frame = CreateFrame("Frame")
 
 local function opt_changed(_, setting, value)
 	local key = setting:GetVariable()
@@ -185,9 +204,14 @@ local function opt_changed(_, setting, value)
 			selljunk.init()
 		end
 	elseif key == "cheapest" then
-		cheapest.owner:UnregisterEvent("MODIFIER_STATE_CHANGED")
+		frame:UnregisterEvent("MODIFIER_STATE_CHANGED")
 		if value then
-			cheapest.owner:RegisterEvent("MODIFIER_STATE_CHANGED")
+			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
+		end
+	elseif key == "fastloot" then
+		frame:UnregisterEvent("LOOT_READY")
+		if value then
+			frame:RegisterEvent("LOOT_READY")
 		end
 	end
 end
@@ -245,19 +269,31 @@ local function init(frame)
 		if value then
 			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 		end
-		cheapest.owner = frame
+	end
+	do -- fastloot
+		local key = "fastloot"
+		local desc = "快速拾取"
+		local label = "快速拾取"
+		local value = options[key] or false
+		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		Settings.CreateCheckBox(category, setting, desc)
+		Settings.SetOnValueChangedCallback(key, opt_changed)
+		if value then
+			frame:RegisterEvent("LOOT_READY")
+		end
 	end
 	Settings.RegisterAddOnCategory(category)
 end
 
 local function onevent(self, event, arg1, arg2)
+	if event == "LOOT_READY" then
+		fastloot.run(arg1)
 	if event == "MODIFIER_STATE_CHANGED" then
 		cheapest.mark(arg1, arg2)
 	end
 end
 
 local function main()
-	local frame = CreateFrame("Frame")
 	frame:RegisterEvent("PLAYER_LOGIN")
 	frame:SetScript("OnEvent", function(self)
 		if not tinyhub_options then
