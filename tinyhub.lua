@@ -51,24 +51,30 @@ function selljunk.flush(sell)
 end
 function selljunk.next()
 	local sell = selljunk
+	if not sell.price then
+		return
+	end
 	local state = sell.state
 	local bag, slot, snum = unpack(state)
-	if slot > snum then
-		bag = bag + 1
-		slot = 1
-		snum = GetContainerNumSlots(bag)
-		if snum == 0 then
-			sell.flush(sell)
+	while true do
+		if slot > snum then
+			bag = bag + 1
+			slot = 1
+			snum = GetContainerNumSlots(bag)
+			if snum == 0 then
+				sell.flush(sell)
+				return
+			end
+			state[1] = bag
+			state[2] = slot
+			state[3] = snum
+		end
+		if sell:routine(bag, slot) then
+			state[2] = slot + 1
+			C_Timer.After(0.02, selljunk.next)
 			return
 		end
-		state[1] = bag
-		state[2] = slot
-		state[3] = snum
-	end
-	sell.routine(sell, bag, slot)
-	state[2] = slot + 1
-	if sell.price then
-		C_Timer.After(0.02, selljunk.next)
+		slot = slot + 1
 	end
 end
 function selljunk.routine(sell, bag, slot)
@@ -83,6 +89,7 @@ function selljunk.routine(sell, bag, slot)
 	C_Container.UseContainerItem(bag, slot)
 	sell.price = sell.price + price * info.stackCount
 	DEFAULT_CHAT_FRAME:AddMessage("|cffbfffff卖出|r: [" .. name .. "]")
+	return true
 end
 function selljunk.begin(sell)
 	if sell.price then
@@ -137,8 +144,8 @@ function cheapest.light(bag, slot)
 	local item
 	for i = 1, NUM_CONTAINER_FRAMES, 1 do
 		local frame = _G["ContainerFrame"..i]
-		if frame:GetID() == bagId and frame:IsShown() then
-			item = _G["ContainerFrame"..i.."Item"..(GetContainerNumSlots(bagId) + 1 - slot)]
+		if frame:GetID() == bag and frame:IsShown() then
+			item = _G["ContainerFrame"..i.."Item"..(GetContainerNumSlots(bag) + 1 - slot)]
 		end
 	end
 	if item then
@@ -152,7 +159,7 @@ function cheapest.mark(key, state)
 	if not (key =="LCTRL" and state == 1) then
 		return
 	end
-	local max = 0
+	local min = 2147483647 -- 0x7fffffff
 	local x
 	local y
 	for bag = 0, NUM_BAG_SLOTS do
@@ -160,11 +167,13 @@ function cheapest.mark(key, state)
 			local info = GetContainerItemInfo(bag, slot)
 			if info then
 				local _, _, quality, _, _, _, _, _, _, _, price = GetItemInfo(info.itemID)
-				local sum = quality == 0 and price > 0 and price * info.stackCount or 0
-				if sum > max then
-					max = sum
-					x = bag
-					y = slot
+				if quality == 0 and price > 0 then
+					local sum = price * info.stackCount
+					if min > sum then
+						min = sum
+						x = bag
+						y = slot
+					end
 				end
 			end
 		end
@@ -179,17 +188,17 @@ end
 local fastloot = {
 	epoch = 0.,
 	DELAY = 0.3,
-	run = function(s)
-		if GetTime() - fastloot.epoch < fastloot.DELAY then
-			return
-		end
-		print("fastloot : " .. tostring(GetNumLootItems()))
-		for i = GetNumLootItems(), 1, -1 do
-			LootSlot(i)
-		end
-		fastloot.epoch = GetTime()
-	end
 }
+function fastloot.run(self, checked)
+	local now = GetTime()
+	if checked == IsModifiedClick("AUTOLOOTTOGGLE") or now - self.epoch < self.DELAY then
+		return
+	end
+	self.epoch = now
+	for i = GetNumLootItems(), 1, -1 do
+		LootSlot(i)
+	end
+end
 
 -- global
 local frame = CreateFrame("Frame")
@@ -197,7 +206,6 @@ local frame = CreateFrame("Frame")
 local function opt_changed(_, setting, value)
 	local key = setting:GetVariable()
 	options[key] = value
-
 	if key == "selljunk" then
 		selljunk.destory()
 		if value then
@@ -229,54 +237,54 @@ local function init(frame)
 	local booltype = type(true)
 	do -- item level
 		local key = "level"
-		local desc = "在鼠标提示中显示物品等级"
 		local label = "显示物品等级"
+		local tooltip = "在鼠标提示中显示物品等级"
 		local value = options[key] or (options[key] == nil and true)
 		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
-		Settings.CreateCheckBox(category, setting, desc)
+		Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(key, opt_changed)
 	end
 	do -- item price
 		-- local has = Auctionator and Auctionator.Config.Get(Auctionator.Config.Options.VENDOR_TOOLTIPS)
 		local key = "price"
-		local desc = "在鼠标提示中显示物品价格"
 		local label = "显示物品价格"
+		local tooltip = "在鼠标提示中显示物品价格"
 		local value = options[key] or false
 		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
-		Settings.CreateCheckBox(category, setting, desc)
+		Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(key, opt_changed)
-	end
-	do -- selljunk
-		local key = "selljunk"
-		local desc = "在商人对话框的右上角添加一个垃圾出售按钮"
-		local label = "添加垃圾出售按钮"
-		local value = options[key] or (options[key] == nil and true)
-		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
-		Settings.CreateCheckBox(category, setting, desc)
-		Settings.SetOnValueChangedCallback(key, opt_changed)
-		if value then
-			selljunk.init()
-		end
 	end
 	do -- cheapest
 		local key = "cheapest"
-		local desc = "按下 Ctrl 时高亮背包内最便宜的垃圾物品"
-		local label = "高亮最便宜的垃圾"
+		local label = "高亮背包垃圾"
+		local tooltip = "按下 Ctrl 时高亮背包内最便宜的垃圾物品"
 		local value = options[key] or (options[key] == nil and true)
 		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
-		Settings.CreateCheckBox(category, setting, desc)
+		Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(key, opt_changed)
 		if value then
 			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 		end
 	end
+	do -- selljunk
+		local key = "selljunk"
+		local label = "垃圾出售"
+		local tooltip = "在商人对话框的右上角添加一个垃圾出售的图标按钮"
+		local value = options[key] or (options[key] == nil and true)
+		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(key, opt_changed)
+		if value then
+			selljunk.init()
+		end
+	end
 	do -- fastloot
 		local key = "fastloot"
-		local desc = "快速拾取"
 		local label = "快速拾取"
+		local tooltip = "不打开拾取框直接拾取"
 		local value = options[key] or false
 		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
-		Settings.CreateCheckBox(category, setting, desc)
+		Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(key, opt_changed)
 		if value then
 			frame:RegisterEvent("LOOT_READY")
@@ -287,8 +295,8 @@ end
 
 local function onevent(self, event, arg1, arg2)
 	if event == "LOOT_READY" then
-		fastloot.run(arg1)
-	if event == "MODIFIER_STATE_CHANGED" then
+		fastloot:run(arg1)
+	elseif event == "MODIFIER_STATE_CHANGED" then
 		cheapest.mark(arg1, arg2)
 	end
 end
