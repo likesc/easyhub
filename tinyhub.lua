@@ -247,11 +247,11 @@ local function init(frame)
 		local label = "显示物品等级"
 		local tooltip = "在鼠标提示中显示物品等级"
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, true)
-		local control = Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if options[key] == false then
-			control:GetSetting():SetValueInternal(false)
+			setting:SetValueInternal(false)
 		end
+		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- item price
 		-- local has = Auctionator and Auctionator.Config.Get(Auctionator.Config.Options.VENDOR_TOOLTIPS)
@@ -259,49 +259,49 @@ local function init(frame)
 		local label = "显示物品价格"
 		local tooltip = "在鼠标提示中显示物品价格"
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
-		local control = Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if options[key] then
-			control:GetSetting():SetValueInternal(true)
+			setting:SetValueInternal(true)
 		end
+		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- cheapest
 		local key = "cheapest"
 		local label = "高亮背包垃圾"
 		local tooltip = "按下 Ctrl 时高亮背包内最便宜的垃圾物品"
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, true)
-		local control = Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if options[key] == false then
-			control:GetSetting():SetValueInternal(false)
+			setting:SetValueInternal(false)
 		else
 			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 		end
+		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- selljunk
 		local key = "selljunk"
 		local label = "垃圾出售"
 		local tooltip = "在商人对话框的右上角添加一个垃圾出售的图标按钮"
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, true)
-		local control = Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if options[key] == false then
-			control:GetSetting():SetValueInternal(false)
+			setting:SetValueInternal(false)
 		else
 			selljunk.init()
 		end
+		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- fastloot
 		local key = "fastloot"
-		local label = "快速拾取"
+		local label = "闪电拾取"
 		local tooltip = "不打开拾取框直接拾取"
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
-		local control = Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if options[key] then
-			control:GetSetting():SetValueInternal(true)
+			setting:SetValueInternal(true)
 			frame:RegisterEvent("LOOT_READY")
 		end
+		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	Settings.RegisterAddOnCategory(category)
 end
