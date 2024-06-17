@@ -246,30 +246,35 @@ local function init(frame)
 		local key = "level"
 		local label = "显示物品等级"
 		local tooltip = "在鼠标提示中显示物品等级"
-		local value = options[key] or (options[key] == nil and true)
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
-		Settings.CreateCheckBox(category, setting, tooltip)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, true)
+		local control = Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+		if options[key] == false then
+			control:GetSetting():SetValueInternal(false)
+		end
 	end
 	do -- item price
 		-- local has = Auctionator and Auctionator.Config.Get(Auctionator.Config.Options.VENDOR_TOOLTIPS)
 		local key = "price"
 		local label = "显示物品价格"
 		local tooltip = "在鼠标提示中显示物品价格"
-		local value = options[key] or false
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
-		Settings.CreateCheckBox(category, setting, tooltip)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
+		local control = Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+		if options[key] then
+			control:GetSetting():SetValueInternal(true)
+		end
 	end
 	do -- cheapest
 		local key = "cheapest"
 		local label = "高亮背包垃圾"
 		local tooltip = "按下 Ctrl 时高亮背包内最便宜的垃圾物品"
-		local value = options[key] or (options[key] == nil and true)
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
-		Settings.CreateCheckBox(category, setting, tooltip)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, true)
+		local control = Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
-		if value then
+		if options[key] == false then
+			control:GetSetting():SetValueInternal(false)
+		else
 			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 		end
 	end
@@ -277,11 +282,12 @@ local function init(frame)
 		local key = "selljunk"
 		local label = "垃圾出售"
 		local tooltip = "在商人对话框的右上角添加一个垃圾出售的图标按钮"
-		local value = options[key] or (options[key] == nil and true)
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
-		Settings.CreateCheckBox(category, setting, tooltip)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, true)
+		local control = Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
-		if value then
+		if options[key] == false then
+			control:GetSetting():SetValueInternal(false)
+		else
 			selljunk.init()
 		end
 	end
@@ -289,11 +295,11 @@ local function init(frame)
 		local key = "fastloot"
 		local label = "快速拾取"
 		local tooltip = "不打开拾取框直接拾取"
-		local value = options[key] or false
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
-		Settings.CreateCheckBox(category, setting, tooltip)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
+		local control = Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
-		if value then
+		if options[key] then
+			control:GetSetting():SetValueInternal(true)
 			frame:RegisterEvent("LOOT_READY")
 		end
 	end
