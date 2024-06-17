@@ -203,8 +203,15 @@ end
 -- global
 local frame = CreateFrame("Frame")
 
+local function PF(key) return NAME .. "-" .. key end
+local function UNPF(key)
+	local p = NAME .. "-"
+	local w = #p
+	return strsub(key, 1, w) == p and strsub(key, w + 1) or key
+end
+
 local function opt_changed(_, setting, value)
-	local key = setting:GetVariable()
+	local key = UNPF(setting:GetVariable())
 	options[key] = value
 	if key == "selljunk" then
 		selljunk.destory()
@@ -240,9 +247,9 @@ local function init(frame)
 		local label = "显示物品等级"
 		local tooltip = "在鼠标提示中显示物品等级"
 		local value = options[key] or (options[key] == nil and true)
-		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
 		Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(key, opt_changed)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- item price
 		-- local has = Auctionator and Auctionator.Config.Get(Auctionator.Config.Options.VENDOR_TOOLTIPS)
@@ -250,18 +257,18 @@ local function init(frame)
 		local label = "显示物品价格"
 		local tooltip = "在鼠标提示中显示物品价格"
 		local value = options[key] or false
-		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
 		Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(key, opt_changed)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- cheapest
 		local key = "cheapest"
 		local label = "高亮背包垃圾"
 		local tooltip = "按下 Ctrl 时高亮背包内最便宜的垃圾物品"
 		local value = options[key] or (options[key] == nil and true)
-		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
 		Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(key, opt_changed)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if value then
 			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 		end
@@ -271,9 +278,9 @@ local function init(frame)
 		local label = "垃圾出售"
 		local tooltip = "在商人对话框的右上角添加一个垃圾出售的图标按钮"
 		local value = options[key] or (options[key] == nil and true)
-		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
 		Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(key, opt_changed)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if value then
 			selljunk.init()
 		end
@@ -283,9 +290,9 @@ local function init(frame)
 		local label = "快速拾取"
 		local tooltip = "不打开拾取框直接拾取"
 		local value = options[key] or false
-		local setting = Settings.RegisterAddOnSetting(category, label, key, booltype, value)
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, value)
 		Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(key, opt_changed)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 		if value then
 			frame:RegisterEvent("LOOT_READY")
 		end
