@@ -36,7 +36,7 @@ local function tip_price(tooltip)
 			end
 		end
 		tooltip:AddDoubleLine(GetMoneyString(count * price), show_level and "Lv(" .. level .. ")" or "")
-	elseif show_level ~= false then
+	elseif show_level then
 		tooltip:AddLine(format(ITEM_LEVEL, level))
 	end
 end
@@ -237,11 +237,12 @@ local function init(frame)
 	-- TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, tip_price)
 	GameTooltip:HookScript("OnTooltipSetItem", tip_price)
 	ItemRefTooltip:HookScript("OnTooltipSetItem", tip_price)
+
 	-- options
 	if not (Settings and Settings.RegisterVerticalLayoutCategory) then
 		return
 	end
-	local category = Settings.RegisterVerticalLayoutCategory(GetAddOnMetadata(NAME, "Title"))
+	local category, layout = Settings.RegisterVerticalLayoutCategory(GetAddOnMetadata(NAME, "Title"))
 	local booltype = type(true)
 	do -- item level
 		local key = "level"
@@ -303,6 +304,12 @@ local function init(frame)
 		end
 		Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+	end
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("关于"))
+	do
+		local about = CreateFromMixins(SettingsListElementInitializer) -- copied from Settings.CreateElementInitializer
+		about:Init("tinyhub-about", {})
+		layout:AddInitializer(about);
 	end
 	Settings.RegisterAddOnCategory(category)
 end
