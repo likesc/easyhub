@@ -29,12 +29,13 @@ local function tip_price(tooltip)
 		end
 		local object = container:GetObjectType()
 		local count = 1
-		if object == "Button" then
-			count = container.count
-		elseif object == "CheckButton" then
-			count = container.count or tonumber(container.Count:GetText())
+		if object == "Button" or object == "CheckButton" then
+			count = container.count or container.Count or 1
+			if type(count) == "table" then
+				count = tonumber(count:GetText()) or 1
+			end
 		end
-		tooltip:AddDoubleLine(GetMoneyString((count or 1) * price), show_level and "Lv(" .. level .. ")" or "")
+		tooltip:AddDoubleLine(GetMoneyString(count * price), show_level and "Lv(" .. level .. ")" or "")
 	elseif show_level ~= false then
 		tooltip:AddLine(format(ITEM_LEVEL, level))
 	end
