@@ -41,6 +41,45 @@ local function tip_price(tooltip)
 	end
 end
 
+-- spell id
+
+local tip_spell = {
+	hook = function(tooltip, unit, index, filter)
+		if tooltip:IsForbidden() then
+			return
+		end
+		local state = options.spellid
+		if not state or state == 1 then
+			return
+		end
+		local id
+		if unit == "player" then -- auru
+			id = select(10, UnitAura(unit, index, filter))
+		elseif state == 3 then
+			local _, sid = tooltip:GetSpell()
+			id = sid
+		end
+		if id then
+			tooltip:AddLine("法术ID : " .. id)
+			tooltip:Show() -- refresh
+		end
+	end,
+	init = function(self)
+		local state = options.spellid
+		if not state or state == 1 then
+			return
+		end
+		if not self.aura then
+			self.aura = true
+			hooksecurefunc(GameTooltip, "SetUnitAura", self.hook)
+		end
+		if not self.spell and state == 3 then
+			self.spell = true
+			GameTooltip:HookScript("OnTooltipSetSpell", self.hook)
+		end
+	end
+}
+
 -- selljunk
 
 local selljunk = { }
@@ -229,6 +268,8 @@ local function opt_changed(_, setting, value)
 		if value then
 			frame:RegisterEvent("LOOT_READY")
 		end
+	elseif key == "spellid" then
+		tip_spell:init()
 	end
 end
 
@@ -237,6 +278,8 @@ local function init(frame)
 	-- TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, tip_price)
 	GameTooltip:HookScript("OnTooltipSetItem", tip_price)
 	ItemRefTooltip:HookScript("OnTooltipSetItem", tip_price)
+
+	tip_spell:init()
 
 	-- options
 	if not (Settings and Settings.RegisterVerticalLayoutCategory) then
@@ -267,6 +310,24 @@ local function init(frame)
 		Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
+	do -- spell id
+		local key = "spellid"
+		local label = "显示法术ID值"
+		local tooltip = "在鼠标提示中显示法术的 ID 值"
+		local get_options = function()
+			local container = Settings.CreateControlTextContainer()
+			container:Add(1, "不显示")
+			container:Add(2, "仅增益")
+			container:Add(3, "所有")
+			return container:GetData()
+		end
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), "number", 1)
+		if options[key] then
+			setting:SetValueInternal(options[key])
+		end
+		Settings.CreateDropDown(category, setting, get_options, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+	end
 	do -- cheapest
 		local key = "cheapest"
 		local label = "高亮背包垃圾"
@@ -282,7 +343,7 @@ local function init(frame)
 	end
 	do -- selljunk
 		local key = "selljunk"
-		local label = "垃圾出售"
+		local label = "垃圾出售按钮"
 		local tooltip = "在商人对话框的右上角添加一个垃圾出售的图标按钮"
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, true)
 		if options[key] == false then
@@ -295,7 +356,7 @@ local function init(frame)
 	end
 	do -- fastloot
 		local key = "fastloot"
-		local label = "闪电拾取"
+		local label = "自动拾取加速"
 		local tooltip = "不打开拾取框直接拾取"
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
 		if options[key] then
