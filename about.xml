@@ -18,16 +18,37 @@
 					<Anchor point="LEFT" relativePoint="CENTER" x="-72" y="0" />
 					<Anchor point="BOTTOMRIGHT" x="-16" y="0" />
 				</Anchors>
+				<Layers>
+					<Layer level="BACKGROUND">
+						<Texture parentKey="hover" inherits="HoverBackgroundTemplate" />
+					</Layer>
+				</Layers>
 			</EditBox>
 		</Frames>
 		<Scripts>
 			<OnLoad>
 				-- REF : Blizzard_SettingControls.lua(SettingsListElementMixin)
-				self.label:SetText("BUG 报告")
-
+				self.label:SetText("问题反馈")
+			</OnLoad>
+			<OnShow>
 				-- REF : Blizzard_SettingControls.lua(SettingsButtonControlMixin)
 				self.url:SetText("https://github.com/likesc/tinyhub")
-			</OnLoad>
+			</OnShow>
+			<OnMouseUp>
+				if upInside and button == "LeftButton" then
+					self.url:HighlightText()
+					self.url:SetFocus()
+				end
+			</OnMouseUp>
+			<OnEnter>
+				SettingsTooltip:SetOwner(self.url, "ANCHOR_TOPLEFT", -12, 0)
+				SettingsTooltip:SetText("需要按下 'Ctrl + C' 复制链接")
+				self.url.hover:Show()
+			</OnEnter>
+			<OnLeave>
+				SettingsTooltip:Hide()
+				self.url.hover:Hide()
+			</OnLeave>
 		</Scripts>
 	</Frame>
 </Ui>
