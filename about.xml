@@ -1,8 +1,18 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXsd">
-	<Frame name="tinyhub-about" virtual="true">
+	<Texture name="tinyhub-hover-background-template" virtual="true" hidden="true">
+		<Anchors>
+			<Anchor relativeKey="$parent" point="TOPLEFT" x="-10"/>
+			<Anchor relativeKey="$parent" point="BOTTOMRIGHT" x="-5"/>
+		</Anchors>
+		<Color a="0.1" r="1" g="1" b="1"/>
+	</Texture>
+	<Frame name="tinyhub-report" virtual="true">
 		<Size x="280" y="26"/>
 		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="hover" inherits="tinyhub-hover-background-template" />
+			</Layer>
 			<Layer level="OVERLAY">
 				<FontString parentKey="label" inherits="GameFontNormal" justifyH="LEFT" wordwrap="false">
 					<Anchors>
@@ -18,11 +28,6 @@
 					<Anchor point="LEFT" relativePoint="CENTER" x="-72" y="0" />
 					<Anchor point="BOTTOMRIGHT" x="-16" y="0" />
 				</Anchors>
-				<Layers>
-					<Layer level="BACKGROUND">
-						<Texture parentKey="hover" inherits="HoverBackgroundTemplate" />
-					</Layer>
-				</Layers>
 			</EditBox>
 		</Frames>
 		<Scripts>
@@ -43,11 +48,47 @@
 			<OnEnter>
 				SettingsTooltip:SetOwner(self.url, "ANCHOR_TOPLEFT", -12, 0)
 				SettingsTooltip:SetText("需要按下 'Ctrl + C' 复制链接")
-				self.url.hover:Show()
+				self.hover:Show()
 			</OnEnter>
 			<OnLeave>
 				SettingsTooltip:Hide()
-				self.url.hover:Hide()
+				self.hover:Hide()
+			</OnLeave>
+		</Scripts>
+	</Frame>
+	<Frame name="tinyhub-version" virtual="true">
+		<Size x="280" y="26"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="hover" inherits="tinyhub-hover-background-template" />
+			</Layer>
+			<Layer level="OVERLAY">
+				<FontString parentKey="label" inherits="GameFontNormal" justifyH="LEFT" wordwrap="false">
+					<Anchors>
+						<Anchor point="LEFT" x="37" y="0" />
+						<Anchor point="RIGHT" relativePoint="CENTER" x="-85" y="0" />
+					</Anchors>
+				</FontString>
+				<FontString parentKey="value" inherits="GameFontNormal" justifyH="LEFT" wordwrap="false">
+					<Anchors>
+						<Anchor point="LEFT" relativePoint="CENTER" x="-76" y="0" />
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<Scripts>
+			<OnLoad>
+				self.label:SetText("文件版本")
+				self.value:SetText(GetAddOnMetadata("tinyhub", "Version"))
+			</OnLoad>
+			<OnEnter>
+				SettingsTooltip:SetOwner(self.value, "ANCHOR_TOPLEFT", -8, 0)
+				SettingsTooltip:SetText("作者 : 5678" .. "2055")
+				self.hover:Show()
+			</OnEnter>
+			<OnLeave>
+				SettingsTooltip:Hide()
+				self.hover:Hide()
 			</OnLeave>
 		</Scripts>
 	</Frame>

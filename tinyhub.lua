@@ -368,9 +368,13 @@ local function init(frame)
 	end
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("关于"))
 	do
-		local about = CreateFromMixins(SettingsListElementInitializer) -- copied from Settings.CreateElementInitializer
-		about:Init("tinyhub-about", {})
-		layout:AddInitializer(about);
+		local version = CreateFromMixins(SettingsListElementInitializer) -- copied from Settings.CreateElementInitializer
+		version:Init("tinyhub-version", {})
+		layout:AddInitializer(version)
+
+		local report = CreateFromMixins(SettingsListElementInitializer)
+		report:Init("tinyhub-report", {})
+		layout:AddInitializer(report)
 	end
 	Settings.RegisterAddOnCategory(category)
 end
