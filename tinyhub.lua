@@ -53,7 +53,7 @@ local tip_spell = {
 			return
 		end
 		local id
-		if unit == "player" then -- auru
+		if unit and index then
 			id = select(10, UnitAura(unit, index, filter))
 		elseif state == 3 then
 			local _, sid = tooltip:GetSpell()
@@ -72,6 +72,7 @@ local tip_spell = {
 		if not self.aura then
 			self.aura = true
 			hooksecurefunc(GameTooltip, "SetUnitAura", self.hook)
+			hooksecurefunc(GameTooltip, "SetUnitBuff", self.hook)
 		end
 		if not self.spell and state == 3 then
 			self.spell = true
