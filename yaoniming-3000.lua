@@ -8,97 +8,97 @@ local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
 
 -- item price/level
 
-local tip_price = {
-	-- BUGBUG : 会错误地重复一次 当商人对话框的"图纸"物品 显示了 "材料需求" 时
-	hook = function(tooltip)
-		if tooltip:IsForbidden() then
-			return
-		end
-		local _, link = tooltip:GetItem()
-		if not link then
-			return
-		end
-		-- name, link, quality, level, min-level, type, subtype, stackcount, equiploc, texture, price
-		local _, _, _, level, _, _, _, _, equip, _, price = GetItemInfo(link)
-
-		local show_price = price and options.price          and price > 0 and not tooltip.shownMoneyFrames
-		local show_level = level and options.level ~= false and level > 1 and equip
-
-		if show_price then
-			local container = GetMouseFocus()
-			if not container then
-				return
-			end
-			local object = container:GetObjectType()
-			local count = 1
-			if object == "Button" or object == "CheckButton" then
-				count = container.count or container.Count or 1
-				if type(count) == "table" then
-					count = tonumber(count:GetText()) or 1
-				end
-			end
-			tooltip:AddDoubleLine(GetMoneyString(count * price), show_level and "Lv(" .. level .. ")" or "")
-		elseif show_level then
-			tooltip:AddLine(format(ITEM_LEVEL, level))
-		end
-	end,
-	init = function(self)
-		if not options.price and options.level == false then
-			return
-		end
-		if self.done then
-			return
-		end
-		self.done = true
-		-- TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, tip_price)
-		GameTooltip:HookScript("OnTooltipSetItem", self.hook)
-		ItemRefTooltip:HookScript("OnTooltipSetItem", self.hook)
+local tip_price = {}
+-- BUGBUG : 会错误地重复一次 当商人对话框的"图纸"物品 显示了 "材料需求" 时
+function tip_price.routine(tooltip)
+	if tooltip:IsForbidden() then
+		return
 	end
-}
+	local _, link = tooltip:GetItem()
+	if not link then
+		return
+	end
+	-- name, link, quality, level, min-level, type, subtype, stackcount, equiploc, texture, price
+	local _, _, _, level, _, _, _, _, equip, _, price = GetItemInfo(link)
+
+	local show_price = price and options.price          and price > 0 and not tooltip.shownMoneyFrames
+	local show_level = level and options.level ~= false and level > 1 and equip
+
+	if show_price then
+		local container = GetMouseFocus()
+		if not container then
+			return
+		end
+		local object = container:GetObjectType()
+		local count = 1
+		if object == "Button" or object == "CheckButton" then
+			count = container.count or container.Count or 1
+			if type(count) == "table" then
+				count = tonumber(count:GetText()) or 1
+			end
+		end
+		tooltip:AddDoubleLine(GetMoneyString(count * price), show_level and "Lv(" .. level .. ")" or "")
+	elseif show_level then
+		tooltip:AddLine(format(ITEM_LEVEL, level))
+	end
+end
+function tip_price.init(self)
+	if not options.price and options.level == false then
+		return
+	end
+	if self.done then
+		return
+	end
+	self.done = true
+	-- TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, tip_price)
+	GameTooltip:HookScript("OnTooltipSetItem", self.routine)
+	ItemRefTooltip:HookScript("OnTooltipSetItem", self.routine)
+end
 
 -- spell id
 
-local tip_spell = {
-	hook = function(tooltip, unit, index, filter)
-		if tooltip:IsForbidden() then
-			return
-		end
-		local state = options.spellid
-		if not state or state == 1 then
-			return
-		end
-		local id
-		if unit and index then
-			id = select(10, UnitAura(unit, index, filter))
-		elseif state == 3 then
-			local _, sid = tooltip:GetSpell()
-			id = sid
-		end
-		if id then
-			tooltip:AddLine("法术ID : " .. id)
-			tooltip:Show() -- refresh
-		end
-	end,
-	init = function(self)
-		local state = options.spellid
-		if not state or state == 1 then
-			return
-		end
-		if not self.aura then
-			self.aura = true
-			hooksecurefunc(GameTooltip, "SetUnitAura", self.hook)
-			hooksecurefunc(GameTooltip, "SetUnitBuff", self.hook)
-		end
-		if not self.spell and state == 3 then
-			self.spell = true
-			GameTooltip:HookScript("OnTooltipSetSpell", self.hook)
-		end
+local tip_spell = {}
+function tip_spell.routine(tooltip, unit, index, filter)
+	if tooltip:IsForbidden() then
+		return
 	end
-}
+	local state = options.spellid
+	if not state or state == 1 then
+		return
+	end
+	local id
+	if unit and index then
+		id = select(10, UnitAura(unit, index, filter))
+	else
+		local _, sid = tooltip:GetSpell()
+		id = sid
+	end
+	if id then
+		tooltip:AddLine("法术ID : " .. id)
+		tooltip:Show() -- refresh
+	end
+end
+function tip_spell.init(self)
+	local state = options.spellid
+	if not state or state == 1 then
+		return
+	end
+	local routine = self.routine
+	if not self.aura then
+		self.aura = true
+		hooksecurefunc(GameTooltip, "SetUnitAura", routine)
+		hooksecurefunc(GameTooltip, "SetUnitBuff", routine) -- "HELPFUL"
+		hooksecurefunc(GameTooltip, "SetUnitDebuff", function(tooltip, unit, index) routine(tooltip, unit, index, "HARMFUL") end)
+	end
+	if not self.spell and state == 3 then
+		self.spell = true
+		GameTooltip:HookScript("OnTooltipSetSpell", routine)
+	end
+end
 
 -- selljunk
 
-local selljunk = { }
+local selljunk = {}
 function selljunk.flush(sell)
 	if sell.price > 0 then
 		DEFAULT_CHAT_FRAME:AddMessage("|cff17a2b8获得|r: " .. GetMoneyString(sell.price))
