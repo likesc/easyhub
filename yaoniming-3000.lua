@@ -385,11 +385,11 @@ local function init(frame)
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("关于"))
 	do
 		local version = CreateFromMixins(SettingsListElementInitializer) -- copied from Settings.CreateElementInitializer
-		version:Init("tinyhub-version", {})
+		version:Init("yaoniming-version", {})
 		layout:AddInitializer(version)
 
 		local report = CreateFromMixins(SettingsListElementInitializer)
-		report:Init("tinyhub-report", {})
+		report:Init("yaoniming-report", {})
 		layout:AddInitializer(report)
 	end
 	Settings.RegisterAddOnCategory(category)
@@ -406,10 +406,10 @@ end
 local function main()
 	frame:RegisterEvent("PLAYER_LOGIN")
 	frame:SetScript("OnEvent", function(self)
-		if not tinyhub_options then
-			tinyhub_options = {}
+		if not yaoniming_3000_options then
+			yaoniming_3000_options = {}
 		end
-		options = tinyhub_options
+		options = yaoniming_3000_options
 		init(self)
 		self:SetScript("OnEvent", onevent)
 	end)

@@ -1,7 +1,7 @@
-tinyhub
+要你命 3000
 ------
 
-极简的小功能集合, 仅适用用于国服现在的 WLK 版本
+极简的小功能集合, 威力惊人，胜过任何武器十倍 (仅适用当前国服重开后的 WLK 版本)
 
 ## 功能
 
@@ -19,8 +19,6 @@ tinyhub
 
 ## 安装
 
-1. 下载压缩包 [tinyhub-main.zip](https://github.com/likesc/tinyhub/archive/refs/heads/main.zip)
+1. 下载压缩包 [yaomiming-3000.zip](https://github.com/likesc/yaoniming/archive/refs/heads/3000.zip)
 
-2. 将 `tinyhub-main.zip` 解压到 `World of Warcraft\_classic_\Interface\AddOns` 目录下
-
-2. 将解压后的目录名从 `tinyhub-main` 改名为 `tinyhub`
+2. 将 `yaomiming-3000.zip` 解压到 `World of Warcraft\_classic_\Interface\AddOns` 目录下

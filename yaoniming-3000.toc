@@ -1,0 +1,11 @@
+## Interface: 30403
+## Version: 0.1.0
+## Title: yaoniming-3000
+## Notes: item price/level, spell id, selljunk, fastloot, cheapest trash
+## Author: likesc
+## SavedVariables: yaoniming_3000_options
+## Title-zhCN: 要你命3000
+## Notes-zhCN: 集多种工具于一身的终极武器霸王
+
+about.xml
+yaoniming-3000.lua

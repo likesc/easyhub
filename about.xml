@@ -1,17 +1,17 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXsd">
-	<Texture name="tinyhub-hover-background-template" virtual="true" hidden="true">
+	<Texture name="yaoniming-hover-background-template" virtual="true" hidden="true">
 		<Anchors>
 			<Anchor relativeKey="$parent" point="TOPLEFT" x="-10"/>
 			<Anchor relativeKey="$parent" point="BOTTOMRIGHT" x="-5"/>
 		</Anchors>
 		<Color a="0.1" r="1" g="1" b="1"/>
 	</Texture>
-	<Frame name="tinyhub-report" virtual="true">
+	<Frame name="yaoniming-report" virtual="true">
 		<Size x="280" y="26"/>
 		<Layers>
 			<Layer level="BACKGROUND">
-				<Texture parentKey="hover" inherits="tinyhub-hover-background-template" />
+				<Texture parentKey="hover" inherits="yaoniming-hover-background-template" />
 			</Layer>
 			<Layer level="OVERLAY">
 				<FontString parentKey="label" inherits="GameFontNormal" justifyH="LEFT" wordwrap="false">
@@ -37,7 +37,7 @@
 			</OnLoad>
 			<OnShow>
 				-- REF : Blizzard_SettingControls.lua(SettingsButtonControlMixin)
-				self.url:SetText("https://github.com/likesc/tinyhub")
+				self.url:SetText("https://github.com/likesc/yaoniming")
 			</OnShow>
 			<OnMouseUp>
 				if upInside and button == "LeftButton" then
@@ -56,11 +56,11 @@
 			</OnLeave>
 		</Scripts>
 	</Frame>
-	<Frame name="tinyhub-version" virtual="true">
+	<Frame name="yaoniming-version" virtual="true">
 		<Size x="280" y="26"/>
 		<Layers>
 			<Layer level="BACKGROUND">
-				<Texture parentKey="hover" inherits="tinyhub-hover-background-template" />
+				<Texture parentKey="hover" inherits="yaoniming-hover-background-template" />
 			</Layer>
 			<Layer level="OVERLAY">
 				<FontString parentKey="label" inherits="GameFontNormal" justifyH="LEFT" wordwrap="false">
@@ -79,7 +79,7 @@
 		<Scripts>
 			<OnLoad>
 				self.label:SetText("文件版本")
-				self.value:SetText(GetAddOnMetadata("tinyhub", "Version"))
+				self.value:SetText(GetAddOnMetadata("yaoniming-3000", "Version"))
 				self.tooltip = "作者 : " .. "56" .. "78" .. "20" .. "55"
 			</OnLoad>
 			<OnEnter>
