@@ -80,10 +80,11 @@
 			<OnLoad>
 				self.label:SetText("文件版本")
 				self.value:SetText(GetAddOnMetadata("tinyhub", "Version"))
+				self.tooltip = "作者 : " .. "56" .. "78" .. "20" .. "55"
 			</OnLoad>
 			<OnEnter>
 				SettingsTooltip:SetOwner(self.value, "ANCHOR_TOPLEFT", -8, 0)
-				SettingsTooltip:SetText("作者 : 5678" .. "2055")
+				SettingsTooltip:SetText(self.tooltip)
 				self.hover:Show()
 			</OnEnter>
 			<OnLeave>

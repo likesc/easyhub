@@ -2,44 +2,59 @@ local NAME = ...
 local options
 
 -- compat
-local GetContainerItemInfo = C_Container.GetContainerItemInfo or GetContainerItemInfo
+local GetContainerItemInfo = C_Container.GetContainerItemInfo -- TODO
 local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNumSlots
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
 
 -- item price/level
 
-local function tip_price(tooltip)
-	if tooltip:IsForbidden() then
-		return
-	end
-	local _, link = tooltip:GetItem()
-	if not link then
-		return
-	end
-	-- name, link, quality, level, min-level, type, subtype, stackcount, equiploc, texture, price
-	local _, _, _, level, _, _, _, _, equip, _, price = GetItemInfo(link)
-
-	local show_price = price and options.price          and price > 0 and not tooltip.shownMoneyFrames
-	local show_level = level and options.level ~= false and level > 1 and equip
-
-	if show_price then
-		local container = GetMouseFocus()
-		if not container then
+local tip_price = {
+	-- BUGBUG : 会错误地重复一次 当商人对话框的"图纸"物品 显示了 "材料需求" 时
+	hook = function(tooltip)
+		if tooltip:IsForbidden() then
 			return
 		end
-		local object = container:GetObjectType()
-		local count = 1
-		if object == "Button" or object == "CheckButton" then
-			count = container.count or container.Count or 1
-			if type(count) == "table" then
-				count = tonumber(count:GetText()) or 1
-			end
+		local _, link = tooltip:GetItem()
+		if not link then
+			return
 		end
-		tooltip:AddDoubleLine(GetMoneyString(count * price), show_level and "Lv(" .. level .. ")" or "")
-	elseif show_level then
-		tooltip:AddLine(format(ITEM_LEVEL, level))
+		-- name, link, quality, level, min-level, type, subtype, stackcount, equiploc, texture, price
+		local _, _, _, level, _, _, _, _, equip, _, price = GetItemInfo(link)
+
+		local show_price = price and options.price          and price > 0 and not tooltip.shownMoneyFrames
+		local show_level = level and options.level ~= false and level > 1 and equip
+
+		if show_price then
+			local container = GetMouseFocus()
+			if not container then
+				return
+			end
+			local object = container:GetObjectType()
+			local count = 1
+			if object == "Button" or object == "CheckButton" then
+				count = container.count or container.Count or 1
+				if type(count) == "table" then
+					count = tonumber(count:GetText()) or 1
+				end
+			end
+			tooltip:AddDoubleLine(GetMoneyString(count * price), show_level and "Lv(" .. level .. ")" or "")
+		elseif show_level then
+			tooltip:AddLine(format(ITEM_LEVEL, level))
+		end
+	end,
+	init = function(self)
+		if not options.price and options.level == false then
+			return
+		end
+		if self.done then
+			return
+		end
+		self.done = true
+		-- TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, tip_price)
+		GameTooltip:HookScript("OnTooltipSetItem", self.hook)
+		ItemRefTooltip:HookScript("OnTooltipSetItem", self.hook)
 	end
-end
+}
 
 -- spell id
 
@@ -271,14 +286,14 @@ local function opt_changed(_, setting, value)
 		end
 	elseif key == "spellid" then
 		tip_spell:init()
+	elseif key == "level" or key == "price" then
+		tip_price:init()
 	end
 end
 
 local function init(frame)
-	-- item price and level
-	-- TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, tip_price)
-	GameTooltip:HookScript("OnTooltipSetItem", tip_price)
-	ItemRefTooltip:HookScript("OnTooltipSetItem", tip_price)
+
+	tip_price:init()
 
 	tip_spell:init()
 
