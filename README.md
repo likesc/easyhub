@@ -19,6 +19,8 @@
 
 - 自动拾取加速 : 加快扫地板的速度 (默认为关闭)
 
+- 竞技场数字名 : 竞技场中使用数字作为姓名版名字 (默认为关闭)
+
 ## 安装
 
 1. 下载压缩包 [yaomiming-3000.zip](https://github.com/likesc/yaoniming/archive/refs/heads/3000.zip)

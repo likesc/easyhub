@@ -96,6 +96,34 @@ function tip_spell.init(self)
 	end
 end
 
+-- arena nameplate number
+
+local arena_nameplate_num = {}
+function arena_nameplate_num.routine(frame)
+	if not (options.arenaid and IsActiveBattlefieldArena()) then
+		return
+	end
+	local unit = frame.unit
+	-- len("nameplateN") and unit[0] == 'n', I guess it's faster than strfind(unit, "nameplate")
+	if not (#unit >= 10 and strbyte(unit, 1) == 110) then
+		return
+	end
+	local equals = UnitIsUnit
+	for id = 1, GetNumArenaOpponents() do
+		if equals(unit, "arena" .. id) then
+			frame.name:SetText(id)
+			break
+		end
+	end
+end
+function arena_nameplate_num.init(self)
+	if (not options.arenaid) or self.done then
+		return
+	end
+	self.done = true
+	hooksecurefunc("CompactUnitFrame_UpdateName", self.routine)
+end
+
 -- selljunk
 
 local selljunk = {}
@@ -288,14 +316,14 @@ local function opt_changed(_, setting, value)
 		tip_spell:init()
 	elseif key == "level" or key == "price" then
 		tip_price:init()
+	elseif key == "arenaid" then
+		arena_nameplate_num:init()
 	end
 end
 
 local function init(frame)
 
 	tip_price:init()
-
-	tip_spell:init()
 
 	-- options
 	if not (Settings and Settings.RegisterVerticalLayoutCategory) then
@@ -338,8 +366,9 @@ local function init(frame)
 			return container:GetData()
 		end
 		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), "number", 1)
-		if options[key] then
+		if options[key] and options[key] > 1 then
 			setting:SetValueInternal(options[key])
+			tip_spell:init()
 		end
 		Settings.CreateDropDown(category, setting, get_options, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
@@ -378,6 +407,18 @@ local function init(frame)
 		if options[key] then
 			setting:SetValueInternal(true)
 			frame:RegisterEvent("LOOT_READY")
+		end
+		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+	end
+	do -- arena nameplate number
+		local key = "arenaid"
+		local label = "竞技场数字名"
+		local tooltip = "竞技场中使用数字作为姓名版名字"
+		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
+		if options[key] then
+			setting:SetValueInternal(true)
+			arena_nameplate_num:init()
 		end
 		Settings.CreateCheckBox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
