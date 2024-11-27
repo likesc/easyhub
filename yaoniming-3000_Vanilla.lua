@@ -5,7 +5,6 @@ local options
 local GetContainerItemInfo = C_Container.GetContainerItemInfo -- TODO
 local GetContainerNumSlots = C_Container.GetContainerNumSlots or GetContainerNumSlots
 local GetItemInfo = C_Item.GetItemInfo or GetItemInfo
-
 -- item price/level
 
 local tip_price = {}
@@ -25,7 +24,7 @@ function tip_price.routine(tooltip)
 	local show_level = level and options.level ~= false and level > 1 and equip
 
 	if show_price then
-		local container = GetMouseFocus()
+		local container = GetMouseFoci()[1]
 		if not container then
 			return
 		end
@@ -94,34 +93,6 @@ function tip_spell.init(self)
 		self.spell = true
 		GameTooltip:HookScript("OnTooltipSetSpell", routine)
 	end
-end
-
--- arena nameplate number
-
-local arena_nameplate_num = {}
-function arena_nameplate_num.routine(frame)
-	if not (options.arenaid and IsActiveBattlefieldArena()) then
-		return
-	end
-	local unit = frame.unit
-	-- len("nameplateN") and unit[0] == 'n', I guess it's faster than strfind(unit, "nameplate")
-	if not (#unit >= 10 and strbyte(unit, 1) == 110) then
-		return
-	end
-	local equals = UnitIsUnit
-	for id = 1, GetNumArenaOpponents() do
-		if equals(unit, "arena" .. id) then
-			frame.name:SetText(id)
-			break
-		end
-	end
-end
-function arena_nameplate_num.init(self)
-	if (not options.arenaid) or self.done then
-		return
-	end
-	self.done = true
-	hooksecurefunc("CompactUnitFrame_UpdateName", self.routine)
 end
 
 -- selljunk
@@ -285,6 +256,7 @@ function fastloot.run(self, checked)
 end
 
 -- global
+
 local frame = CreateFrame("Frame")
 
 local function PF(key) return NAME .. "-" .. key end
@@ -296,7 +268,6 @@ end
 
 local function opt_changed(_, setting, value)
 	local key = UNPF(setting:GetVariable())
-	options[key] = value
 	if key == "selljunk" then
 		selljunk.destory()
 		if value then
@@ -316,27 +287,22 @@ local function opt_changed(_, setting, value)
 		tip_spell:init()
 	elseif key == "level" or key == "price" then
 		tip_price:init()
-	elseif key == "arenaid" then
-		arena_nameplate_num:init()
 	end
 end
 
 local function init(frame)
-	-- options
 	if not (Settings and Settings.RegisterVerticalLayoutCategory) then
 		return
 	end
+
 	local category, layout = Settings.RegisterVerticalLayoutCategory(GetAddOnMetadata(NAME, "Title"))
 	local booltype = type(true)
 	do -- item level
 		local key = "level"
 		local label = "显示物品等级"
 		local tooltip = "在鼠标提示中显示物品等级"
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
-		if options[key] then
-			setting:SetValueInternal(true)
-		end
-		Settings.CreateCheckBox(category, setting, tooltip)
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
+		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- item price
@@ -344,11 +310,8 @@ local function init(frame)
 		local key = "price"
 		local label = "显示物品价格"
 		local tooltip = "在鼠标提示中显示物品价格"
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
-		if options[key] then
-			setting:SetValueInternal(true)
-		end
-		Settings.CreateCheckBox(category, setting, tooltip)
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
+		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	tip_price:init()
@@ -364,60 +327,45 @@ local function init(frame)
 			container:Add(3, "所有")
 			return container:GetData()
 		end
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), "number", 1)
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, "number", label, 1)
 		if options[key] and options[key] > 1 then
-			setting:SetValueInternal(options[key])
 			tip_spell:init()
 		end
-		Settings.CreateDropDown(category, setting, get_options, tooltip)
+		Settings.CreateDropdown(category, setting, get_options, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
+
 	do -- cheapest
 		local key = "cheapest"
 		local label = "高亮背包垃圾"
 		local tooltip = "按下 Ctrl 时高亮背包内最便宜的垃圾物品"
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
 		if options[key] then
-			setting:SetValueInternal(true)
 			frame:RegisterEvent("MODIFIER_STATE_CHANGED")
 		end
-		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- selljunk
 		local key = "selljunk"
 		local label = "垃圾出售按钮"
 		local tooltip = "在商人对话框的右上角添加一个垃圾出售的图标按钮"
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
 		if options[key] then
-			setting:SetValueInternal(true)
 			selljunk.init()
 		end
-		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	do -- fastloot
 		local key = "fastloot"
 		local label = "自动拾取加速"
 		local tooltip = "不打开拾取框直接拾取"
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
 		if options[key] then
-			setting:SetValueInternal(true)
 			frame:RegisterEvent("LOOT_READY")
 		end
-		Settings.CreateCheckBox(category, setting, tooltip)
-		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
-	end
-	do -- arena nameplate number
-		local key = "arenaid"
-		local label = "竞技场数字名"
-		local tooltip = "竞技场中使用数字作为姓名版名字"
-		local setting = Settings.RegisterAddOnSetting(category, label, PF(key), booltype, false)
-		if options[key] then
-			setting:SetValueInternal(true)
-			arena_nameplate_num:init()
-		end
-		Settings.CreateCheckBox(category, setting, tooltip)
+		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("关于"))
