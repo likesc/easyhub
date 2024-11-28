@@ -255,6 +255,75 @@ function fastloot.run(self, checked)
 	end
 end
 
+-- health/mana status text
+
+local health = {}
+function health.init(self)
+	if not options.health or self.done then
+		return
+	end
+	local frame = TargetFrame
+	local healbar = getglobal(frame:GetName() .. "HealthBar")
+	local manabar = getglobal(frame:GetName() .. "ManaBar")
+	if (not healbar) or healbar.TextString or (not manabar) or manabar.TextString then
+		return
+	end
+
+	local function mk(parent, rel, x, y)
+		local font = parent:CreateFontString(nil, "BORDER", "TextStatusBarText")
+		font:SetPoint(rel, x, y)
+		return font
+	end
+	local anchor = frame.textureFrame
+	-- health
+	self.ShouldKnowUnitHealth = ShouldKnowUnitHealth
+	ShouldKnowUnitHealth = function(unit) return true end -- HOOK
+	healbar.LeftText = mk(anchor, "LEFT", 6, 3) -- Warth/TargetFrame.xml
+	healbar.RightText = mk(anchor, "RIGHT", -110, 3)
+	healbar.TextString = mk(anchor, "CENTER", -50, 3)
+	-- manabar
+	manabar.LeftText = mk(anchor, "LEFT", 6, -8)
+	manabar.RightText = mk(anchor, "RIGHT", -110, -8)
+	manabar.TextString = mk(anchor, "CENTER", -50, -8)
+
+	self.done = true
+end
+
+function health.destory(self)
+	if not self.done then
+		return
+	end
+	ShouldKnowUnitHealth = self.ShouldKnowUnitHealth
+	local frame = TargetFrame
+	local healbar = getglobal(frame:GetName() .. "HealthBar")
+	healbar.LeftText:Hide()
+	healbar.LeftText:SetParent(nil)
+	healbar.LeftText = nil
+
+	healbar.RightText:Hide()
+	healbar.RightText:SetParent(nil)
+	healbar.RightText = nil
+
+	healbar.TextString:Hide()
+	healbar.TextString:SetParent(nil)
+	healbar.TextString = nil
+
+	local manabar = getglobal(frame:GetName() .. "ManaBar")
+	manabar.LeftText:Hide()
+	manabar.LeftText:SetParent(nil)
+	manabar.LeftText = nil
+
+	manabar.RightText:Hide()
+	manabar.RightText:SetParent(nil)
+	manabar.RightText = nil
+
+	manabar.TextString:Hide()
+	manabar.TextString:SetParent(nil)
+	manabar.TextString = nil
+
+	self.done = nil
+end
+
 -- global
 
 local frame = CreateFrame("Frame")
@@ -287,6 +356,9 @@ local function opt_changed(_, setting, value)
 		tip_spell:init()
 	elseif key == "level" or key == "price" then
 		tip_price:init()
+	elseif key == "health" then
+		health:destory()
+		health:init()
 	end
 end
 
@@ -368,6 +440,18 @@ local function init(frame)
 		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
+	do -- health
+		local key = "health"
+		local label = "目标生命数值"
+		local tooltip = "显示目标的生命和法力数值, (对玩家无效)"
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
+		if options[key] then
+			health:init()
+		end
+		Settings.CreateCheckbox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+	end
+
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("关于"))
 	do
 		local version = CreateFromMixins(SettingsListElementInitializer) -- copied from Settings.CreateElementInitializer
