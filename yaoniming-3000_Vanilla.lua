@@ -287,39 +287,28 @@ function health.init(self)
 	manabar.TextString = mk(anchor, "CENTER", -50, -8)
 
 	self.done = true
+
+	if UnitExists("target") then
+		UnitFrame_Update(frame)
+	end
 end
 
 function health.destory(self)
 	if not self.done then
 		return
 	end
-	ShouldKnowUnitHealth = self.ShouldKnowUnitHealth
-	local frame = TargetFrame
-	local healbar = getglobal(frame:GetName() .. "HealthBar")
-	healbar.LeftText:Hide()
-	healbar.LeftText:SetParent(nil)
-	healbar.LeftText = nil
+	local function cleanup(bar)
+		for _, key in ipairs({"LeftText", "RightText", "TextString"}) do
+			bar[key]:SetParent(nil)
+			bar[key] = nil
+		end
+	end
 
-	healbar.RightText:Hide()
-	healbar.RightText:SetParent(nil)
-	healbar.RightText = nil
+	ShouldKnowUnitHealth = self.ShouldKnowUnitHealth or ShouldKnowUnitHealth
 
-	healbar.TextString:Hide()
-	healbar.TextString:SetParent(nil)
-	healbar.TextString = nil
-
-	local manabar = getglobal(frame:GetName() .. "ManaBar")
-	manabar.LeftText:Hide()
-	manabar.LeftText:SetParent(nil)
-	manabar.LeftText = nil
-
-	manabar.RightText:Hide()
-	manabar.RightText:SetParent(nil)
-	manabar.RightText = nil
-
-	manabar.TextString:Hide()
-	manabar.TextString:SetParent(nil)
-	manabar.TextString = nil
+	local name = TargetFrame:GetName()
+	cleanup(getglobal(name .. "HealthBar"))
+	cleanup(getglobal(name .. "ManaBar"))
 
 	self.done = nil
 end
