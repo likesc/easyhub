@@ -31,4 +31,4 @@
 
 2. 将 `yaomiming-3000.zip` 解压到 `World of Warcraft\_classic_\Interface\AddOns` 或 `World of Warcraft\_classic_era_\Interface\AddOns`目录下
 
-  - 注意 `_classic_` 表示**巫妖王**, 而 `_classic_era_` 则为 **经典60**
+  注意 `_classic_` 表示**巫妖王**版本, 而 `_classic_era_` 则为 **经典60**
