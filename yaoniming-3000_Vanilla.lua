@@ -18,11 +18,10 @@ function tip_price.routine(tooltip)
 		return
 	end
 	-- name, link, quality, level, min-level, type, subtype, stackcount, equiploc, texture, price
-	local _, _, _, level, _, _, _, _, equip, _, price = GetItemInfo(link)
+	local _, _, _, level, _, _, _, stack, equip, _, price = GetItemInfo(link)
 
 	local show_price = price and options.price          and price > 0 and not tooltip.shownMoneyFrames
 	local show_level = level and options.level ~= false and level > 1 and equip
-
 	if show_price then
 		local container = GetMouseFoci()[1]
 		if not container then
@@ -30,7 +29,7 @@ function tip_price.routine(tooltip)
 		end
 		local object = container:GetObjectType()
 		local count = 1
-		if object == "Button" or object == "CheckButton" then
+		if stack > 1 and (object == "Button" or object == "CheckButton") then
 			count = container.count or container.Count or 1
 			if type(count) == "table" then
 				count = tonumber(count:GetText()) or 1
