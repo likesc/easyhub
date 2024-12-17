@@ -433,11 +433,11 @@ local function init(frame)
 	Settings.RegisterAddOnCategory(category)
 end
 
-local function onevent(self, event, arg1, arg2)
+local function onevent(self, event, ...)
 	if event == "LOOT_READY" then
-		fastloot:run(arg1)
+		fastloot:run(...)
 	elseif event == "MODIFIER_STATE_CHANGED" then
-		cheapest.mark(arg1, arg2)
+		cheapest.mark(...)
 	end
 end
 

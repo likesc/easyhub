@@ -80,7 +80,7 @@
 			<OnLoad>
 				self.label:SetText("文件版本")
 				self.value:SetText(GetAddOnMetadata("yaoniming-3000", "Version"))
-				self.tooltip = "作者 : " .. "56" .. "78" .. "20" .. "55"
+				self.tooltip = "作者 : " .. "l" .. "w" .. "m" .. "0" .. "7" .. "3" .. "5"
 			</OnLoad>
 			<OnEnter>
 				SettingsTooltip:SetOwner(self.value, "ANCHOR_TOPLEFT", -8, 0)

@@ -261,9 +261,9 @@ function health.init(self)
 	if not options.health or self.done then
 		return
 	end
-	local frame = TargetFrame
-	local healbar = getglobal(frame:GetName() .. "HealthBar")
-	local manabar = getglobal(frame:GetName() .. "ManaBar")
+	local target = TargetFrame
+	local healbar = getglobal(target:GetName() .. "HealthBar")
+	local manabar = getglobal(target:GetName() .. "ManaBar")
 	if (not healbar) or healbar.TextString or (not manabar) or manabar.TextString then
 		return
 	end
@@ -273,7 +273,7 @@ function health.init(self)
 		font:SetPoint(rel, x, y)
 		return font
 	end
-	local anchor = frame.textureFrame
+	local anchor = target.textureFrame
 	-- health
 	self.ShouldKnowUnitHealth = ShouldKnowUnitHealth
 	ShouldKnowUnitHealth = function(unit) return true end -- HOOK
@@ -288,7 +288,7 @@ function health.init(self)
 	self.done = true
 
 	if UnitExists("target") then
-		UnitFrame_Update(frame)
+		UnitFrame_Update(target)
 	end
 end
 
@@ -310,6 +310,99 @@ function health.destory(self)
 	cleanup(getglobal(name .. "ManaBar"))
 
 	self.done = nil
+end
+
+-- target threatIndicator
+local threat = {}
+function threat.init(self)
+	local target = TargetFrame
+	if not options.threat or threat.done or target.threatIndicator then
+		return
+	end
+	if not self.flash then
+		-- threatIndicator, "Blizzard_UnitFrame/Wrath/TargetFrame.xml::$parentFlash"
+		local flash = target:CreateTexture(nil, "BACKGROUND")
+		flash:SetSize(242, 93)
+		flash:SetPoint("TOPLEFT", -24, 0)
+		flash:SetTexture("Interface/TargetingFrame/UI-TargetingFrame-Flash")
+		flash:SetTexCoord(0, 0.9453125, 0, 0.181640625)
+		flash:Hide()
+		self.flash = flash
+	end
+	local number = self.number
+	if not number then
+		-- threatNumericIndicator, "Blizzard_UnitFrame/Wrath/TargetFrame.xml::$parentNumericalThreat"
+		number = CreateFrame("Frame", nil, target)
+		number:SetSize(49, 18)
+		number:SetPoint("BOTTOM", target, "TOP", -50, -22)
+		number:Hide()
+		self.number = number
+
+		local bg = number:CreateTexture(nil, "BACKGROUND")
+		bg:SetSize(37, 14)
+		bg:SetPoint("TOP", 0, -3)
+		bg:SetTexture("Interface/TargetingFrame/UI-StatusBar")
+		number.bg = bg
+
+		local text = number:CreateFontString(nil, "BACKGROUND", "GameFontHighlight")
+		text:SetPoint("TOP", 0, -4)
+		number.text = text
+
+		local border = number:CreateTexture(nil, "ARTWORK")
+		border:SetAllPoints()
+		border:SetTexture("Interface/TargetingFrame/NumericThreatBorder")
+		border:SetTexCoord(0, 0.765625, 0, 0.5625)
+	end
+	-- event
+	number:RegisterEvent("CVAR_UPDATE")
+	number:RegisterEvent("PLAYER_TARGET_CHANGED")
+	number:RegisterUnitEvent("UNIT_THREAT_SITUATION_UPDATE", "player")
+	number:SetScript("OnEvent", self.routine)
+	self.level = GetCVar("threatWarning")
+	self.done = true
+end
+function threat.destory(self)
+	if not self.done then
+		return
+	end
+	self.number:UnregisterAllEvents()
+	self.number:SetScript("OnEvent", nil)
+	self.number:Hide()
+	self.flash:Hide()
+	self.done = nil
+end
+function threat.routine(number, event, ...)
+	if event == "CVAR_UPDATE" then
+		local cvar, sval = ...
+		if cvar ~= "threatWarning" then
+			return
+		end
+		threat.level = sval
+	end
+	local level, flash = threat.level, threat.flash
+	if not (level == "3" or (level == "2" and IsInGroup()) or (level == "1" and IsInInstance())) then
+		flash:Hide()
+		number:Hide()
+		return
+	end
+	-- UnitFrame.lua::UnitFrame_UpdateThreatIndicator
+	local tanking, status, _, pct = UnitDetailedThreatSituation("player", "target")
+	if status and status > 0 then
+		flash:SetVertexColor(GetThreatStatusColor(status))
+		flash:Show()
+	else
+		flash:Hide()
+	end
+	if tanking then
+		pct = UnitThreatPercentageOfLead("player", "target")
+	end
+	if pct and pct ~= 0 then
+		number.text:SetText(format("%1.0f", pct).."%")
+		number.bg:SetVertexColor(GetThreatStatusColor(status))
+		number:Show()
+	else
+		number:Hide()
+	end
 end
 
 -- global
@@ -347,6 +440,9 @@ local function opt_changed(_, setting, value)
 	elseif key == "health" then
 		health:destory()
 		health:init()
+	elseif key == "threat" then
+		threat:destory()
+		threat:init()
 	end
 end
 
@@ -439,7 +535,17 @@ local function init(frame)
 		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
-
+	do -- threat
+		local key = "threat"
+		local label = "目标头像仇恨"
+		local tooltip = "在目标头像框架上显示仇恨"
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
+		if options[key] then
+			threat:init()
+		end
+		Settings.CreateCheckbox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+	end
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("关于"))
 	do
 		local version = CreateFromMixins(SettingsListElementInitializer) -- copied from Settings.CreateElementInitializer
@@ -453,11 +559,11 @@ local function init(frame)
 	Settings.RegisterAddOnCategory(category)
 end
 
-local function onevent(self, event, arg1, arg2)
+local function onevent(self, event, ...)
 	if event == "LOOT_READY" then
-		fastloot:run(arg1)
+		fastloot:run(...)
 	elseif event == "MODIFIER_STATE_CHANGED" then
-		cheapest.mark(arg1, arg2)
+		cheapest.mark(...)
 	end
 end
 
