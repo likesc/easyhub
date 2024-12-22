@@ -450,7 +450,6 @@ function icebarrier.init(self)
 		ui:SetSize(PlayerFrameManaBar:GetSize())
 		ui:SetPoint("TOPLEFT", PlayerFrameManaBar, "BOTTOMLEFT")
 		ui:SetStatusBarColor(0.682352941, 0.858823529, 0.992156863) -- RGB (174, 219, 240)
-		ui.name = UnitName("player")
 		self.ui = ui
 	end
 	self:reset(self.ui)
@@ -506,7 +505,7 @@ end
 function icebarrier.on_combatlog(ui)
 	local info = {CombatLogGetCurrentEventInfo()}
 	local len = #info
-	if info[len - 3] ~= 13033 or info[len - 6] ~= ui.name then -- spell id, name
+	if info[len - 3] ~= 13033 or bit.band(info[10], 1) == 0 then -- (spellid : 13033)  (destFlags)
 		return
 	end
 	-- DevTools_Dump(info)
