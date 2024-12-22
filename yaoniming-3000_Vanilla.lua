@@ -361,7 +361,7 @@ function threat.init(self)
 	self.level = GetCVar("threatWarning")
 	self.done = true
 end
-function threat.destory(self)
+function threat.unplug(self)
 	if not self.done then
 		return
 	end
@@ -405,6 +405,117 @@ function threat.routine(number, event, ...)
 	end
 end
 
+-- AlternateManaBar
+
+local function create_manabar()
+	local ui = CreateFrame("StatusBar", nil, PlayerFrame)
+	ui:SetPoint("TOPLEFT", 106, -64)
+	ui:SetSize(119.33, 12)
+	ui:SetStatusBarTexture("Interface/TargetingFrame/UI-StatusBar")
+	ui:SetStatusBarColor(0, 0, 1)
+	ui:SetMinMaxValues(0, 1.0)
+	-- backdrop
+	local bg = ui:CreateTexture(nil, "BACKGROUND")
+	bg:SetAllPoints()
+	bg:SetColorTexture(0, 0, 0, .5)
+	-- border
+	local border = ui:CreateTexture(nil, "OVERLAY")
+	border:SetTexture("Interface/TargetingFrame/UI-TargetingFrame")
+	border:SetTexCoord(0.587890625, 0.1044921875, 0.41015625, 0.51171875)
+	border:SetPoint("BOTTOMRIGHT", 4, 0)
+	border:SetPoint("TOPLEFT", -1, 0)
+	-- text
+	local text = ui:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
+	text:SetPoint("TOPLEFT")
+	text:SetPoint("BOTTOMRIGHT", -1.2, 1)
+	text:SetJustifyH("RIGHT")
+	local style = GetCVar("statusTextDisplay")
+	if style ~= "BOTH" then
+		if style == "NONE" then
+			text:Hide()
+		else
+			text:SetJustifyH("CENTER")
+		end
+	end
+	ui.text = text
+	return ui
+end
+
+local icebarrier = {}
+function icebarrier.init(self)
+	if not self.ui then
+		local ui = create_manabar()
+		ui:SetStatusBarColor(0.858823529, 0.945098039, 0.992156863) -- RGB (219, 241, 253)
+		ui.name = UnitName("player")
+		self.ui = ui
+	end
+	self:reset(self.ui)
+	self.done = true
+end
+
+function icebarrier.unplug(self)
+	if not self.done then
+		return
+	end
+	local ui = self.ui
+	ui:Hide()
+	ui:UnregisterAllEvents()
+	ui:SetScript("OnEvent", nil)
+	self.done = nil
+end
+
+function icebarrier.on_cast(ui, event, ...)
+	local _, _, id = ...
+	if id ~= 13033 then
+		return
+	end
+	ui:UnregisterAllEvents()
+	ui:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+	ui:SetScript("OnEvent", icebarrier.on_combatlog)
+	icebarrier:refresh(ui)
+end
+
+function icebarrier.reset(self, ui)
+	ui:Hide()
+	ui:UnregisterAllEvents()
+	ui:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+	ui:SetScript("OnEvent", icebarrier.on_cast)
+end
+
+function icebarrier.refresh(self, ui)
+	local max = 826 + floor(GetSpellBonusDamage(5) * 0.1) -- (spellid : 13033) = 826
+	self.max = max
+	self.cur = max
+	ui:SetValue(1.)
+	ui.text:SetText(max)
+	ui:Show()
+end
+
+function icebarrier.absorbed(self, ui, damage)
+	local cur = self.cur - damage
+	-- print(self.cur, damage, cur)
+	self.cur = cur
+	ui:SetValue(cur / self.max)
+	ui.text:SetText(cur)
+end
+
+function icebarrier.on_combatlog(ui)
+	local info = {CombatLogGetCurrentEventInfo()}
+	local len = #info
+	if info[len - 3] ~= 13033 and info[8] ~= ui.name then -- spell id, name
+		return
+	end
+	-- DevTools_Dump(info)
+	local subevent = info[2]
+	if subevent == "SPELL_ABSORBED" then
+		icebarrier:absorbed(ui, info[len])
+	elseif subevent == "SPELL_AURA_REMOVED" then
+		icebarrier:reset(ui)
+	elseif subevent == "SPELL_AURA_REFRESH" then -- or subevent == "SPELL_AURA_APPLIED"
+		icebarrier:refresh(ui)
+	end
+end
+
 -- global
 
 local frame = CreateFrame("Frame")
@@ -441,8 +552,11 @@ local function opt_changed(_, setting, value)
 		health:destory()
 		health:init()
 	elseif key == "threat" then
-		threat:destory()
+		threat:unplug()
 		threat:init()
+	elseif key == "icebarrier" then
+		icebarrier:unplug()
+		icebarrier:init()
 	end
 end
 
@@ -546,6 +660,19 @@ local function init(frame)
 		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
+
+	if select(2, UnitClass("player")) == "MAGE" then -- icebarrier
+		local key = "icebarrier"
+		local label = "法师冰盾状态"
+		local tooltip = "在头像框架上添加一个状态条用于查看法师冰盾的状态"
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
+		if options[key] then
+			icebarrier:init()
+		end
+		Settings.CreateCheckbox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+	end
+
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("关于"))
 	do
 		local version = CreateFromMixins(SettingsListElementInitializer) -- copied from Settings.CreateElementInitializer
