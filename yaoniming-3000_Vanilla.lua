@@ -420,12 +420,12 @@ local function create_manabar()
 	local border = ui:CreateTexture(nil, "OVERLAY")
 	border:SetTexture("Interface/TargetingFrame/UI-TargetingFrame")
 	border:SetTexCoord(0.587890625, 0.1044921875, 0.41015625, 0.51171875)
-	border:SetPoint("BOTTOMRIGHT", 4, 0)
 	border:SetPoint("TOPLEFT", -1, 0)
+	border:SetPoint("BOTTOMRIGHT", 4.16, 0)
 	-- text
 	local text = ui:CreateFontString(nil, "OVERLAY", "TextStatusBarText")
 	text:SetPoint("TOPLEFT")
-	text:SetPoint("BOTTOMRIGHT", -1.2, 1)
+	text:SetPoint("BOTTOMRIGHT", -1, 0)
 	text:SetJustifyH("RIGHT")
 	local style = GetCVar("statusTextDisplay")
 	if style ~= "BOTH" then
@@ -447,8 +447,8 @@ function icebarrier.init(self)
 	if not self.ui then
 		local ui = create_manabar()
 		ui:SetParent(PlayerFrame)
-		ui:SetPoint("TOPLEFT", 106, -64)
-		ui:SetSize(119.33, 12)
+		ui:SetSize(PlayerFrameManaBar:GetSize())
+		ui:SetPoint("TOPLEFT", PlayerFrameManaBar, "BOTTOMLEFT")
 		ui:SetStatusBarColor(0.682352941, 0.858823529, 0.992156863) -- RGB (174, 219, 240)
 		ui.name = UnitName("player")
 		self.ui = ui
@@ -530,18 +530,19 @@ function druidbar.init(self)
 	if not self.ui then
 		local ui = create_manabar()
 		ui:SetParent(PlayerFrame)
-		ui:SetPoint("TOPLEFT", 106, -64)
-		ui:SetSize(119.33, 12)
+		ui:SetSize(PlayerFrameManaBar:GetSize())
+		ui:SetPoint("TOPLEFT", PlayerFrameManaBar, "BOTTOMLEFT")
 		self.ui = ui
 	end
 	local ui = self.ui
+	local unit = "player"
 	ui:UnregisterAllEvents()
-	ui:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
-	ui:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
+	ui:RegisterUnitEvent("UNIT_POWER_UPDATE", unit)
+	ui:RegisterUnitEvent("UNIT_DISPLAYPOWER", unit)
 	ui:SetScript("OnEvent", druidbar.routine)
 	self.done = true
-	self.routine(ui, "UNIT_DISPLAYPOWER", "player")
-	self.routine(ui, "UNIT_POWER_UPDATE", "player", "MANA")
+	self.routine(ui, "UNIT_DISPLAYPOWER", unit)
+	self.routine(ui, "UNIT_POWER_UPDATE", unit, "MANA")
 end
 function druidbar.routine(ui, event, unit, kind)
 	if event == "UNIT_POWER_UPDATE" then
