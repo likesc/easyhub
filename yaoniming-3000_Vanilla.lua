@@ -506,7 +506,7 @@ end
 function icebarrier.on_combatlog(ui)
 	local info = {CombatLogGetCurrentEventInfo()}
 	local len = #info
-	if info[len - 3] ~= 13033 and info[8] ~= ui.name then -- spell id, name
+	if info[len - 3] ~= 13033 or info[len - 6] ~= ui.name then -- spell id, name
 		return
 	end
 	-- DevTools_Dump(info)
