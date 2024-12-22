@@ -408,9 +408,7 @@ end
 -- AlternateManaBar
 
 local function create_manabar()
-	local ui = CreateFrame("StatusBar", nil, PlayerFrame)
-	ui:SetPoint("TOPLEFT", 106, -64)
-	ui:SetSize(119.33, 12)
+	local ui = CreateFrame("StatusBar")
 	ui:SetStatusBarTexture("Interface/TargetingFrame/UI-StatusBar")
 	ui:SetStatusBarColor(0, 0, 1)
 	ui:SetMinMaxValues(0, 1.0)
@@ -443,9 +441,15 @@ end
 
 local icebarrier = {}
 function icebarrier.init(self)
+	if not options.icebarrier or self.done then
+		return
+	end
 	if not self.ui then
 		local ui = create_manabar()
-		ui:SetStatusBarColor(0.858823529, 0.945098039, 0.992156863) -- RGB (219, 241, 253)
+		ui:SetParent(PlayerFrame)
+		ui:SetPoint("TOPLEFT", 106, -64)
+		ui:SetSize(119.33, 12)
+		ui:SetStatusBarColor(0.682352941, 0.858823529, 0.992156863) -- RGB (174, 219, 240)
 		ui.name = UnitName("player")
 		self.ui = ui
 	end
@@ -516,6 +520,47 @@ function icebarrier.on_combatlog(ui)
 	end
 end
 
+-- simple druid manabar
+
+local druidbar = { unplug = icebarrier.unplug }
+function druidbar.init(self)
+	if not options.druidbar or self.done then
+		return
+	end
+	if not self.ui then
+		local ui = create_manabar()
+		ui:SetParent(PlayerFrame)
+		ui:SetPoint("TOPLEFT", 106, -64)
+		ui:SetSize(119.33, 12)
+		self.ui = ui
+	end
+	local ui = self.ui
+	ui:UnregisterAllEvents()
+	ui:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+	ui:RegisterUnitEvent("UNIT_DISPLAYPOWER", "player")
+	ui:SetScript("OnEvent", druidbar.routine)
+	self.done = true
+	self.routine(ui, "UNIT_DISPLAYPOWER", "player")
+	self.routine(ui, "UNIT_POWER_UPDATE", "player", "MANA")
+end
+function druidbar.routine(ui, event, unit, kind)
+	if event == "UNIT_POWER_UPDATE" then
+		if kind ~= "MANA" then
+			return
+		end
+		local mana = UnitPower(unit, 0) -- 0 is Enum.PowerType.Mana
+		ui:SetValue(mana / UnitPowerMax(unit, 0))
+		ui.text:SetText(mana)
+	elseif event == "UNIT_DISPLAYPOWER" then
+		local t = UnitPowerType(unit)
+		if t ~= 0 then
+			ui:Show()
+		else
+			ui:Hide()
+		end
+	end
+end
+
 -- global
 
 local frame = CreateFrame("Frame")
@@ -557,6 +602,9 @@ local function opt_changed(_, setting, value)
 	elseif key == "icebarrier" then
 		icebarrier:unplug()
 		icebarrier:init()
+	elseif key == "druidbar" then
+		druidbar:unplug()
+		druidbar:init()
 	end
 end
 
@@ -668,6 +716,18 @@ local function init(frame)
 		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
 		if options[key] then
 			icebarrier:init()
+		end
+		Settings.CreateCheckbox(category, setting, tooltip)
+		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
+	end
+
+	if select(2, UnitClass("player")) == "DRUID" then -- druidbar
+		local key = "druidbar"
+		local label = "德鲁伊魔法条"
+		local tooltip = "在头像框架上添加一个状态条用于查看野性德鲁伊的魔法数值"
+		local setting = Settings.RegisterAddOnSetting(category, PF(key), key, options, booltype, label, false)
+		if options[key] then
+			druidbar:init()
 		end
 		Settings.CreateCheckbox(category, setting, tooltip)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
