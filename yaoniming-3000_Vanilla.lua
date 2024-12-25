@@ -721,7 +721,7 @@ local function init(frame)
 		Settings.SetOnValueChangedCallback(setting.variable, opt_changed)
 	end
 
-	if select(2, UnitClass("player")) == "DRUID" then -- druidbar
+	if select(2, UnitClass("player")) == "DRUID" and not IsAddOnLoaded("SimpleDruidMana") then -- druidbar
 		local key = "druidbar"
 		local label = "德鲁伊魔法条"
 		local tooltip = "在头像框架上添加一个状态条用于查看野性德鲁伊的魔法数值"
